@@ -29,7 +29,6 @@
         "@rozzzly/babel-plugin-module-extension-resolver": "^1.0.0-rc.1",
         "@types/common-tags": "^1.8.0",
         "@types/fs-extra": "^9.0.4",
-        "@types/minimist": "^1.2.1",
         "@types/node": "^14.14.10",
         "@typescript-eslint/eslint-plugin": "^4.14.0",
         "@typescript-eslint/parser": "^4.14.0",
@@ -45,9 +44,9 @@
         "async-line-reader": "^1.0.0",
         "bfj": "^7.0.2",
         "chalk": "^4.1.0",
+        "commander": "^7.2.0",
         "execa": "^4.1.0",
         "fs-extra": "^9.0.1",
-        "minimist": "^1.2.5",
         "ora": "^5.1.0",
         "pretty-bytes": "^5.6.0",
         "printf": "^0.6.1"

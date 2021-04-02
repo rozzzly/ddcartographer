@@ -1,64 +1,71 @@
 import { Readable } from 'node:stream';
 import FileRecord from './FileRecord';
-import RegionRegistry from './RegionRegistry';
-import { processFile } from './inputProcessor';
-import { UnitMultipliers } from './common';
-import { writeIndex, writeMapfile } from './outputProcessor';
+import MapRegistry from './MapRegistry';
+import { readIndex as readIndex, readMapFile } from './inputProcessor';
+
+import { writeIndex, writeMapfile as writeMapFile } from './outputProcessor';
 import path from 'node:path';
-import { exit } from 'node:process';
+import Block, { BlockPrimitive } from './Block';
 
 export interface DDCartographerOptions {
-    input: string | Readable;
-    outputDir?: string;
+    indexFilePath: string | Readable;
+    mapFilePath: string | Readable;
+    reportPath?: string;
     silent?: boolean;
-    padding?: number;
-    alignment?: number;
-    listRegion?: false | [number, number]
-    domainSize: number;
-    writeIndex: boolean;
 }
 
 const defaultOpts: Partial<DDCartographerOptions> = {
-    silent: false,
-    padding: 10 * UnitMultipliers.MB,
-    alignment: 1 * UnitMultipliers.MB
+    silent: false
 };
 
-export async function ddCartographer(options: DDCartographerOptions): Promise<void> {
+export async function ddCartographer(options: DDCartographerOptions): Promise<MapRegistry> {
     const opts: Required<DDCartographerOptions> = { ...defaultOpts, ...options } as any;
     if (!opts.silent) {
         console.log();
     }
 
-    let files: FileRecord[];
-    if (typeof opts.input === 'string') {
-        files = await processFile(opts.input, opts.silent);
+    const registry = new MapRegistry(opts);
+
+    if (options.mapFilePath) {
+        if (typeof opts.mapFilePath === 'string') {
+            const blockPrimitives = await readMapFile(opts.mapFilePath, opts.silent);
+            for (const primitive of blockPrimitives) {
+                registry.blocks.push(new Block(registry, primitive));
+            }
+        } else {
+            console.error('stream (stdin) input not yet implemented');
+            process.exit(1);
+        }
+    }
+
+    if (typeof opts.indexFilePath === 'string') {
+        const files = await readIndex(opts.indexFilePath, opts.silent);
+        await registry.ingestFileRecords(files);
     } else {
         console.error('stream (stdin) input not yet implemented');
         process.exit(1);
     }
 
-    const registry = new RegionRegistry(opts);
-    registry.ingestFileRecords(files);
-    await registry.mergeRegions();
+    return registry;
+    // await registry.mergeBlocks();
 
-    if (opts.listRegion) {
-        for (const file of files) {
-            if (file.start >= opts.listRegion[0] && file.end <= opts.listRegion[1]) {
-                console.log(file.path);
-            }
-        }
-        process.exit(0);
-    }
+    // if (opts.listBlock) {
+    //     for (const file of files) {
+    //         if (file.start >= opts.listBlock[0] && file.end <= opts.listBlock[1]) {
+    //             console.log(file.path);
+    //         }
+    //     }
+    //     process.exit(0);
+    // }
 
-    if (opts.writeIndex) {
-        await writeIndex(registry, path.join(opts.outputDir, 'index.json'));
-    }
+    // if (opts.writeIndex) {
+    //     await writeIndex(registry, path.join(opts.outputDir, 'index.json'));
+    // }
 
-    await writeMapfile(registry, path.join(opts.outputDir, 'mapfile.map'));
-    if (!opts.silent) {
-        console.log();
-    }
+    // await writeMapFile(registry, path.join(opts.outputDir, 'mapfile.map'));
+    // if (!opts.silent) {
+    //     console.log();
+    // }
 }
 
 export default ddCartographer;

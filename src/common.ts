@@ -1,6 +1,5 @@
 export interface Ranged {
     start: number;
-    size: number;
     end: number;
 }
 
@@ -66,3 +65,43 @@ export function parseBytes(str: string | number | undefined): number | null {
         return Number.parseInt(trimmed);
     } return null;
 }
+export function literal<T extends boolean>(value: T): T;
+export function literal<T extends number>(value: T): T;
+export function literal<T extends string>(value: T): T;
+export function literal<T extends string[]>(...values: T): LiteralsToUnion<T>;
+export function literal<T>(value: T): T;
+export function literal<T>(value: T): T {
+    return value;
+}
+
+
+export type Key = (
+    | number
+    | string
+    | symbol
+);
+
+/**
+ * @ https://github.com/Microsoft/TypeScript/issues/28046
+ */
+export const literalsToList = <T extends Key>(...args: T[]): T[] => (args);
+export const literalsToEnum = <T extends Key>(...args: T[]): {
+    [K in T]: K;
+} => (args.reduce((reduction, lit) => ({
+    /* eslint-disable */
+    ...reduction,
+    [lit]: lit
+}), {}) as {
+    /* eslint-enable indent */
+     [K in T]: K;
+});
+
+export type LiteralsToUnion<T> = (
+    (T extends ReadonlyArray<infer Literal>
+        ? Literal
+        : (T extends {}
+            ? keyof T
+            : never
+        )
+    )
+);

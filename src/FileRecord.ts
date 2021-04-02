@@ -1,10 +1,10 @@
 import path from 'node:path';
-import RegionRecord from './RegionRecord';
+import Block from './Block';
 import { Ranged } from './common';
 
 export class FileRecord implements Ranged {
 
-    region: RegionRecord | null;
+    blocks: Block[];
     path: string;
     start: number;
     size: number;
@@ -15,7 +15,11 @@ export class FileRecord implements Ranged {
         this.start = offset;
         this.end = offset + size;
         this.size = size;
-        this.region = null;
+        this.blocks = [];
+    }
+
+    _sort(): void {
+        this.blocks = this.blocks.sort((a, b) => a.start - b.start);
     }
 
     static normalizePath(rawPath: string): string {
