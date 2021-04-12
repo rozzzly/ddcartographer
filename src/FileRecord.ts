@@ -23,7 +23,7 @@ export class FileRecord implements Ranged {
     }
 
     static normalizePath(rawPath: string): string {
-        return path.normalize(rawPath.replace(/^;\\\$Root\\/, ''));
+        return path.normalize(rawPath.replace(/^;(\\\$Root\\)?/, '').replace(/\\/g, '/'));
     }
 }
 

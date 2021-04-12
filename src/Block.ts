@@ -8,7 +8,7 @@ export const BlockStatus = literalsToEnum(
     'NonScraped',
     'BadSector',
     'Finished',
-    'Unspecified'
+    // 'Unspecified'
 );
 export type BlockStatus = LiteralsToUnion<typeof BlockStatus>
 
@@ -53,26 +53,26 @@ export class Block implements BlockPrimitive {
         this.registry = registry;
     }
 
-    static merge(a: Block, b: Block, status: BlockStatus = BlockStatus.Unspecified): Block {
-        const nBlock = new Block(
-            a.registry,
-            { start: a.start, end: b.end, status: ((status === BlockStatus.Unspecified)
-                ? ((a === b)
-                    ? a.status
-                    : BlockStatus.Unspecified
-                )
-                : status
-            ) }
-        );
-        nBlock.files = [ ...a.files, ...b.files ];
-        nBlock.files.forEach(f => {
-            f.blocks = f.blocks.filter(r => r !== a && r !== b);
-            f.blocks.push(nBlock);
-            f._sort();
-        });
-        nBlock.files.sort((a, b) => a.start - b.start);
-        return nBlock;
-    }
+    // static merge(a: Block, b: Block, status: BlockStatus = BlockStatus.Unspecified): Block {
+    //     const nBlock = new Block(
+    //         a.registry,
+    //         { start: a.start, end: b.end, status: ((status === BlockStatus.Unspecified)
+    //             ? ((a === b)
+    //                 ? a.status
+    //                 : BlockStatus.Unspecified
+    //             )
+    //             : status
+    //         ) }
+    //     );
+    //     nBlock.files = [ ...a.files, ...b.files ];
+    //     nBlock.files.forEach(f => {
+    //         f.blocks = f.blocks.filter(r => r !== a && r !== b);
+    //         f.blocks.push(nBlock);
+    //         f._sort();
+    //     });
+    //     nBlock.files.sort((a, b) => a.start - b.start);
+    //     return nBlock;
+    // }
 }
 
 export default Block;

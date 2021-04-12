@@ -1,32 +1,79 @@
+import pb from 'pretty-bytes';
+import Chalk from 'chalk';
+
 export interface Ranged {
     start: number;
     end: number;
 }
 
 export interface SnoozeTimeout {
-    sleep(minTimeout: number): Promise<void>;
+    (minTimeout: number): Promise<void>;
+    delta: number;
 }
 
 
 export const snooze = (): SnoozeTimeout=> {
     let lastCall = Date.now();
-    return {
-        sleep: (minTimeout: number) => {
-            const now = Date.now();
-            const delta = now - lastCall;
-            const timeout = (delta > minTimeout) ? 0 : minTimeout - delta;
-            return new Promise<void>(resolve => (
-                setTimeout(() => {
-                    lastCall = Date.now();
-                    resolve();
-                }, timeout)
-            ));
-        }
+    const ret = (minTimeout: number) => {
+        const now = Date.now();
+        const delta = now - lastCall;
+        const timeout = (delta > minTimeout) ? 0 : minTimeout - delta;
+        return new Promise<void>(resolve => (
+            setTimeout(() => {
+                lastCall = Date.now();
+                resolve();
+            }, timeout)
+        ));
     };
+    Object.defineProperty(ret, 'delta', {
+        get: (): number => (Date.now() - lastCall)
+    });
+    return ret as any;
 };
 
 const formatter = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-export const formatNumber = (n: number) => formatter.format(n);
+export const fmtNumber = (n: number) => formatter.format(n);
+
+export const colorizeBytes = (value: string | number): string => (
+    (((typeof value === 'string')
+        ? value
+        : pb(value)
+    ).replace(/(\S+) (\S+)/, [
+        Chalk.cyan('$1'),
+        ' ',
+        Chalk.cyan.dim('$2')
+    ].join('')))
+);
+export const colorizePercent = (value: string | number): string => {
+    let percentFormatted;
+    if (typeof value === 'number') {
+        percentFormatted = fmtNumber(value * 100);
+    } else {
+        const match = value.match(/\(?(\d+\.?\d*)\s*%?\)?/);
+        if (!match) {
+            console.error('colorizePercent(): unexpected string format');
+            return Chalk.red('formatting error');
+        } else {
+            percentFormatted = match[1];
+        }
+    }
+    return [
+        Chalk.magenta.dim('('),
+        Chalk.magenta(percentFormatted),
+        Chalk.magenta.dim('%)')
+    ].join('');
+};
+
+export const colorizeReadable = (str: string): string => {
+    const match = str.match(/(\S+ \S+) *\(?(\d+\.?\d*)\s*%?\)?/);
+    if (!match) {
+        console.error('colorizeReadable(): unexpected string format');
+        return Chalk.red('formatting error');
+    } else {
+        return `${colorizeBytes(match[1])} ${colorizePercent(match[2])}`;
+    }
+};
+
 
 const bytesRegExp = /^\d+$/;
 const humanBytesRegExp = /^(\d+) ?(B|KB?|MB?|GB?|TB?)?$/i;

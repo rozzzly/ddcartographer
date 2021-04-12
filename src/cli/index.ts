@@ -1,78 +1,20 @@
-import { Command } from 'commander';
-import { resolve } from 'node:path';
-import fs from 'fs-extra';
-import ddCartographer, { DDCartographerOptions } from './index';
-import { parseBytes } from './common';
-import { BlockStatus } from './Block';
-import { report } from 'node:process';
+import commander from 'commander';
+import addSubcommand_status from './status';
 
 
 const listBlockRegExp = / *((?:\d+) ?(?:B|KB?|MB?|GB?|TB?)?) *, *((?:\d+) ?(?:B|KB?|MB?|GB?|TB?)?)/;
 
 
 async function run(): Promise<void> {
-    const program = (new Command()
+    const root = (new commander.Command()
         .name('ddcartographer')
         .version('0.0.1', '--version')
-        .option('-s, --silent', 'disable interactive cli interface')
+        .option('-s, --silent', 'disable "interactive" cli interface')
     );
 
-    const status = new Command('status');
-    status.description('lists files with a specific recovery status');
-    (status
-        .command('complete <mapFilePath> <fileListPath> <reportPath>')
-        .description('lists files with 100% finished blocks', {
-            mapFilePath: 'path to ddrescue mapfile',
-            fileListPath: 'path to file list',
-            reportPath: 'path file report will be written to'
-        })
-    );
-    (status
-        .command('incomplete <mapFilePath> <fileListPath> <reportPath>')
-        .description('lists files that are not 100% recovered (including those with non-scraped, non-trimmed, bad sectors)', {
-            mapFilePath: 'path to ddrescue mapfile',
-            fileListPath: 'path to file list',
-            reportPath: 'path file report will be written to'
-        })
-    );
-    (status
-        .command('failed <mapFilePath> <fileListPath> <reportPath>')
-        .description('lists files where all blocks are tried but some are failed (ie: non-scraped, non-trimmed, bad sectors)', {
-            mapFilePath: 'path to ddrescue mapfile',
-            fileListPath: 'path to file list',
-            reportPath: 'path file report will be written to'
-        })
-    );
-    (status
-        .command('bad <mapFilePath> <fileListPath> <reportPath>')
-        .description('lists files that contain bad sectors but no non-scrapped or non-trimmed blocks', {
-            mapFilePath: 'path to ddrescue mapfile',
-            fileListPath: 'path to file list',
-            reportPath: 'path file report will be written to'
-        }).action(async (mapFilePath, fileListPath, reportPath, options, command) => {
-            const registry = await ddCartographer({
-                mapFilePath,
-                reportPath,
-                indexFilePath: fileListPath
-            });
-            console.log('okay gonna try to filter for bad ones now');
-            const bad = [];
-            for (const file of registry.files) {
-                for (const block of file.blocks) {
-                    if (block.status === BlockStatus.BadSector) {
-                        bad.push(file.path);
-                        console.log(file.path);
-                        break;
-                    }
-                }
-            }
-            console.log(`okay found ${bad.length} bad files... gonna write it now`);
-            await fs.writeJson(reportPath, bad);
-        })
-    );
-    program.addCommand(status);
+    addSubcommand_status(root);
 
-    await program.parseAsync(process.argv);
+    await root.parseAsync(process.argv);
 }
 
 // async function run(): Promise<void> {

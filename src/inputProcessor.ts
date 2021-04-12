@@ -5,52 +5,84 @@ import Chalk from 'chalk';
 import { Readable } from 'node:stream';
 import { AsyncLineReader } from 'async-line-reader';
 import { FileRecord } from './FileRecord';
-import { snooze, SnoozeTimeout } from './common';
+import { snooze } from './common';
 import Block, { BlockStatus, BlockPrimitive, StatusCharToStatusEnum, StatusChar } from './Block';
+import { DDCartographerOptions } from '.';
+import micromatch from 'micromatch';
 
 
-export async function readIndexFile(stream: Readable, silent: boolean = false): Promise<FileRecord[]> {
+export async function readFileListFile(stream: Readable, opts: DDCartographerOptions): Promise<FileRecord[]> {
     const reader = new AsyncLineReader(stream);
     const records = [];
 
     let line: string | null;
     let lineNo = 0;
-    let recordOffset = -1, recordSize = -1, totalSize = 0, parts = null;
+    let fileOffset = -1, fileSize = -1, totalSize = 0, parts = null;
 
-    let s: any = null;
+    const sleep = snooze();
     let o: any = null;
 
-    if (!silent) {
-        o = ora({ text: 'Processing custer data from MFT', indent: 0 }).start();
-        s = snooze();
-        await s.sleep(1000);
+    if (!opts.silent) {
+        o = ora({ text: 'Reading file list...', indent: 0 }).start();
+        await sleep(1000);
     }
 
+    let excludedCount = 0;
+    let excludedSize = 0;
     while ((line = await reader.readLine()) !== null) {
         if (lineNo % 2 == 0) {
             parts = line.split(' ');
-            recordOffset = Number.parseInt(parts[0]);
-            recordSize = Number.parseInt(parts[1]);
-            totalSize += recordSize;
+            fileOffset = Number.parseInt(parts[0]);
+            fileSize = Number.parseInt(parts[1]);
         } else {
-            records.push(new FileRecord(line.trim(), recordOffset, recordSize));
-            if (!silent) {
-                o.text = `Processed ${Chalk.yellow(records.length)} file records ${Chalk.cyan(`(${pb(totalSize)})`)}`;
+            const filePath = FileRecord.normalizePath(line.trim());
+            if (opts.fileFilter) {
+                if (micromatch.isMatch(filePath, opts.fileFilter)) {
+                    totalSize += fileSize;
+                    records.push(new FileRecord(filePath, fileOffset, fileSize));
+                } else {
+                    excludedSize += fileSize;
+                    excludedCount++;
+                }
+                if (!opts.silent && sleep.delta > 250) {
+                    o.text = [
+                        'Collected ',
+                        Chalk.yellow(records.length),
+                        ` file records${excludedCount === 0 ? '' : 's'} `,
+                        Chalk.cyan(`(${pb(totalSize)})`),
+                        ' from file list. ',
+                        Chalk.yellow(records.length),
+                        ` file record${excludedCount === 0 ? ' was' : 's were'} excluded `,
+                        Chalk.cyan(`(${pb(excludedSize)})`),
+                    ].join('');
+                }
+            } else {
+                totalSize += fileSize;
+                records.push(new FileRecord(line.trim(), fileOffset, fileSize));
+                if (!opts.silent && sleep.delta > 250) {
+                    o.text = [
+                        'Collected ',
+                        Chalk.yellow(records.length),
+                        ` file records${excludedCount === 0 ? '' : 's'} `,
+                        Chalk.cyan(`(${pb(totalSize)})`),
+                        ' from file list.'
+                    ].join('');
+                }
             }
         }
         lineNo++;
     }
 
-    if (!silent) {
-        o.succeed(Chalk.green(`Complete. Processed ${Chalk.yellow(records.length)} file records ${Chalk.cyan(`(${pb(totalSize)})`)}`));
-        await s.sleep(750);
+    if (!opts.silent) {
+        o.succeed(Chalk.green(`Complete. Collected ${Chalk.yellow(records.length)} file records ${Chalk.cyan(`(${pb(totalSize)})`)} from file list.`));
+        await sleep(750);
     }
     return records;
 }
 
-export async function readIndex(inputPath: string, silent: boolean = false): Promise<FileRecord[]> {
+export async function readFileList(inputPath: string, opts: DDCartographerOptions): Promise<FileRecord[]> {
     const stream = fs.createReadStream(inputPath);
-    const files = await readIndexFile(stream, silent);
+    const files = await readFileListFile(stream, opts);
     stream.close();
     return files;
 }
@@ -62,13 +94,12 @@ export async function readMap(stream: Readable, silent: boolean = false): Promis
     const blocks: BlockPrimitive[] = [];
 
     let line: string | null;
-    let s: SnoozeTimeout = null as any;
+    const sleep = snooze();
     let o: ora.Ora = null as any;
 
     if (!silent) {
-        o = ora({ text: 'Reading ddrescue mapfile', indent: 0 }).start();
-        s = snooze();
-        await s.sleep(1000);
+        o = ora({ text: 'Reading ddrescue mapfile...', indent: 0 }).start();
+        await sleep(1000);
     }
 
     while ((line = await reader.readLine()) !== null) {
@@ -83,13 +114,13 @@ export async function readMap(stream: Readable, silent: boolean = false): Promis
                 status: StatusCharToStatusEnum[match.groups!.status as any as StatusChar]
             });
             if (!silent) {
-                o.text = `Read ddrescue mapfile. ${Chalk.yellow(blocks.length - 1)} block${blocks.length === 1 ? '' : 's'} added.`;
+                o.text = `${Chalk.yellow(blocks.length - 1)} block${blocks.length === 1 ? '' : 's'} added from ddrescue mapfile.`;
             }
         }
     }
 
     if (!silent) {
-        o.succeed(Chalk.green(`Processed mapfile. ${Chalk.yellow(blocks.length - 1)} block${blocks.length === 1 ? '' : 's'} added.`));
+        o.succeed(Chalk.green(`Complete. ${Chalk.yellow(blocks.length - 1)} block${blocks.length === 1 ? '' : 's'} added from ddrescue mapfile.`));
     }
 
     return blocks;

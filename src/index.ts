@@ -1,14 +1,12 @@
 import { Readable } from 'node:stream';
-import FileRecord from './FileRecord';
 import MapRegistry from './MapRegistry';
-import { readIndex as readIndex, readMapFile } from './inputProcessor';
-
-import { writeIndex, writeMapfile as writeMapFile } from './outputProcessor';
+import { readFileList, readMapFile } from './inputProcessor';
 import path from 'node:path';
 import Block, { BlockPrimitive } from './Block';
 
 export interface DDCartographerOptions {
-    indexFilePath: string | Readable;
+    fileListPath: string | Readable;
+    fileFilter?: string;
     mapFilePath: string | Readable;
     reportPath?: string;
     silent?: boolean;
@@ -38,8 +36,8 @@ export async function ddCartographer(options: DDCartographerOptions): Promise<Ma
         }
     }
 
-    if (typeof opts.indexFilePath === 'string') {
-        const files = await readIndex(opts.indexFilePath, opts.silent);
+    if (typeof opts.fileListPath === 'string') {
+        const files = await readFileList(opts.fileListPath, opts);
         await registry.ingestFileRecords(files);
     } else {
         console.error('stream (stdin) input not yet implemented');
@@ -47,25 +45,6 @@ export async function ddCartographer(options: DDCartographerOptions): Promise<Ma
     }
 
     return registry;
-    // await registry.mergeBlocks();
-
-    // if (opts.listBlock) {
-    //     for (const file of files) {
-    //         if (file.start >= opts.listBlock[0] && file.end <= opts.listBlock[1]) {
-    //             console.log(file.path);
-    //         }
-    //     }
-    //     process.exit(0);
-    // }
-
-    // if (opts.writeIndex) {
-    //     await writeIndex(registry, path.join(opts.outputDir, 'index.json'));
-    // }
-
-    // await writeMapFile(registry, path.join(opts.outputDir, 'mapfile.map'));
-    // if (!opts.silent) {
-    //     console.log();
-    // }
 }
 
 export default ddCartographer;

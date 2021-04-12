@@ -2,7 +2,7 @@ import bfj from 'bfj';
 import fs from 'fs-extra';
 import ora from 'ora';
 import Chalk from 'chalk';
-import { formatNumber, Ranged, snooze, SnoozeTimeout } from './common';
+import { fmtNumber, Ranged, snooze, SnoozeTimeout } from './common';
 import MapRegistry from './MapRegistry';
 import printf from 'printf';
 
@@ -30,8 +30,8 @@ export async function writeMapfile(registry: MapRegistry, mapPath: string) {
     // let o: ora.Ora = null as any;
     // if (!registry._opts.silent) {
     //     o = ora({ text: `writing mapfile`, indent: 0 }).start();
-    //     s = snooze();
-    //     s.sleep(2000);
+    //     sleep = snooze();
+    //     await sleep(2000);
     // }
     // await fs.remove(mapPath);
     // let lines = [
@@ -78,12 +78,11 @@ export async function writeMapfile(registry: MapRegistry, mapPath: string) {
 }
 
 export async function writeIndex(registry: MapRegistry, indexPath: string): Promise<void> {
-    let s: SnoozeTimeout = null as any;
+    const sleep = snooze();
     let o: ora.Ora = null as any;
     if (!registry._opts.silent) {
         o = ora({ text: `Building registry index`, indent: 0 }).start();
-        s = snooze();
-        s.sleep(2000);
+        await sleep(2000);
     }
     const obj: string[] = [];
     for (let r = 0; r < registry.blocks.length; r++) {
@@ -101,13 +100,13 @@ export async function writeIndex(registry: MapRegistry, indexPath: string): Prom
     }
     if (!registry._opts.silent) {
         o.text = `Writing registry index to ${Chalk.cyan(indexPath)}`;
-        s.sleep(1000);
+        await sleep(1000);
     }
 
     await bfj.write(indexPath, obj, { spaces: 4 });
 
     if (!registry._opts.silent) {
-        s.sleep(1000);
+        await sleep(1000);
         o.succeed(Chalk.green(`Complete. Registry index written to ${Chalk.cyan(indexPath)}`));
     }
 }
