@@ -5,6 +5,7 @@ import Chalk from 'chalk';
 import { fmtNumber, Ranged, snooze, SnoozeTimeout } from './common';
 import MapRegistry from './MapRegistry';
 import printf from 'printf';
+import { BlockStatus, StatusEnumToStatusChar } from './Block';
 
 
 // export interface SerializedBlock extends Ranged {
@@ -26,55 +27,47 @@ import printf from 'printf';
 //}
 
 export async function writeMapfile(registry: MapRegistry, mapPath: string) {
-    // let s: SnoozeTimeout = null as any;
-    // let o: ora.Ora = null as any;
-    // if (!registry._opts.silent) {
-    //     o = ora({ text: `writing mapfile`, indent: 0 }).start();
-    //     sleep = snooze();
-    //     await sleep(2000);
-    // }
-    // await fs.remove(mapPath);
-    // let lines = [
-    //     '# Rescue log file created by ddcartographer\n',
-    //     '# Command line:\n',
-    //     '# current_pos  current_status\n',
-    //     '0x00000000     +\n',
-    //     '#      pos        size  status\n'
-    // ];
-    // let lastOffset = 0;
-    // let blocksWritten = 0;
-    // for (const block of registry.blocks) {
-    //     if (lastOffset !== block.start) {
-    //         lines.push(printf('0x%08X 0x%08X  +\n', lastOffset, block.start - lastOffset));
-    //     }
-    //     lastOffset = block.end;
-    //     lines.push(printf('0x%08X   0x%08X ?\n', block.start, block.size));
-    //     blocksWritten++;
-    //     if (lines.length >= 20) {
-    //         await fs.writeFile(mapPath, lines.join(''), { flag: 'a' });
-    //         lines = [];
-    //         if (!registry._opts.silent) {
-    //             o.text = [
-    //                 'writing mapfile: block ',
-    //                 Chalk.yellow(blocksWritten),
-    //                 ' of ',
-    //                 Chalk.yellow(registry.blocks.length),
-    //                 ' (',
-    //                 formatNumber(blocksWritten/registry.blocks.length),
-    //                 '%)'
-    //             ].join('');
-    //         }
-    //     }
-    // }
-    // if (lastOffset !== registry._opts.domainSize) {
-    //     lines.push(printf('0x%08X   0x%08X +\n', lastOffset, registry._opts.domainSize - lastOffset));
-    // }
-    // if (lines.length) {
-    //     await fs.writeFile(mapPath, lines.join(''), { flag: 'a' });
-    // }
-    // if (!registry._opts.silent) {
-    //     o.succeed(Chalk.green(`Complete. ${Chalk.yellow(registry.blocks.length)} blocks written`));
-    //}
+    let sleep: SnoozeTimeout = snooze();
+    let o: ora.Ora = null as any;
+    if (!registry._opts.silent) {
+        o = ora({ text: `writing mapfile`, indent: 0 }).start();
+        sleep = snooze();
+        await sleep(2000);
+    }
+    await fs.remove(mapPath);
+    let lines = [
+        '# Rescue log file created by ddcartographer\n',
+        '# Command line:\n',
+        '# current_pos  current_status\n',
+        '0x00000000     +\n',
+        '#      pos        size  status\n'
+    ];
+    let blocksWritten = 0;
+    for (const block of registry.blocks) {
+        lines.push(printf(`0x%08X   0x%08X ${StatusEnumToStatusChar[block.status]}\n`, block.start, block.size));
+        blocksWritten++;
+        if (lines.length >= 20) {
+            await fs.writeFile(mapPath, lines.join(''), { flag: 'a' });
+            lines = [];
+            if (!registry._opts.silent) {
+                o.text = [
+                    'writing mapfile: block ',
+                    Chalk.yellow(blocksWritten),
+                    ' of ',
+                    Chalk.yellow(registry.blocks.length),
+                    ' (',
+                    fmtNumber(blocksWritten/registry.blocks.length),
+                    '%)'
+                ].join('');
+            }
+        }
+    }
+    if (lines.length) {
+        await fs.writeFile(mapPath, lines.join(''), { flag: 'a' });
+    }
+    if (!registry._opts.silent) {
+        o.succeed(Chalk.green(`Complete. ${Chalk.yellow(registry.blocks.length)} blocks written`));
+    }
 }
 
 export async function writeIndex(registry: MapRegistry, indexPath: string): Promise<void> {

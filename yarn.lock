@@ -2862,6 +2862,11 @@ iconv-lite@0.4.24:
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
 
+iec-bytes-parser@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/iec-bytes-parser/-/iec-bytes-parser-1.0.0.tgz#0eb28f18c776eafb9681625b9e3815404f21d852"
+  integrity sha512-npUK0um2l3GmTfEYAW3zER+04K6sk7Jr/TJGIhXc4nwHxBld38//L3p4wcGj6qbJfNoJZG/6876TU70yMEaUxg==
+
 ieee754@^1.1.13:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.2.1.tgz#8eb7a10a63fff25d15a57b001586d177d1b0d352"

@@ -25,7 +25,6 @@ export class MapRegistry {
 
     locate(offset: number): Block {
         return this.blocks[this.locateIndex(offset)];
-
     }
 
     locateIndex(offset: number): number {

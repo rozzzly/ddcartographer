@@ -1,4 +1,5 @@
 import commander from 'commander';
+import addSubcommand_domain from './domain';
 import addSubcommand_status from './status';
 
 
@@ -13,6 +14,7 @@ async function run(): Promise<void> {
     );
 
     addSubcommand_status(root);
+    addSubcommand_domain(root);
 
     await root.parseAsync(process.argv);
 }

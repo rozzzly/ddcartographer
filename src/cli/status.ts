@@ -6,6 +6,7 @@ import ddCartographer from '../index';
 import { BlockStatus } from '../Block';
 import { fmtNumber, snooze } from '../common';
 import ora from 'ora';
+import { readFileList } from '../inputProcessor';
 
 const fileFilterOption = () => new commander.Option(
     '-f, --file-filter <pattern>',
@@ -23,7 +24,7 @@ export function addSubcommand_status(root: commander.Command): void {
     status.description('lists files with a specific recovery status');
     (status
         .command('breakdown <mapFilePath> <fileListPath> <reportPath>')
-        .description('lists files with 100% finished blocks', {
+        .description('lists files recovery status of files', {
             mapFilePath: 'path to ddrescue mapfile',
             fileListPath: 'path to file list',
             reportPath: 'path file report will be written to'
@@ -37,6 +38,13 @@ export function addSubcommand_status(root: commander.Command): void {
                 ...root.opts(),
                 ...opts
             });
+            if (typeof fileListPath === 'string') {
+                const files = await readFileList(fileListPath, registry._opts);
+                await registry.ingestFileRecords(files);
+            } else {
+                console.error('stream (stdin) input not yet implemented');
+                process.exit(1);
+            }
             const breakdowns = await registry.analyzeFileRecords();
             await fs.writeJson(reportPath, breakdowns);
         })
@@ -56,6 +64,13 @@ export function addSubcommand_status(root: commander.Command): void {
                 fileListPath: fileListPath,
                 ...options
             });
+            if (typeof fileListPath === 'string') {
+                const files = await readFileList(fileListPath, registry._opts);
+                await registry.ingestFileRecords(files);
+            } else {
+                console.error('stream (stdin) input not yet implemented');
+                process.exit(1);
+            }
             console.log('okay gonna try to filter for good ones now');
             const complete = [];
             for (const file of registry.files) {
@@ -103,6 +118,13 @@ export function addSubcommand_status(root: commander.Command): void {
                 reportPath,
                 fileListPath: fileListPath
             });
+            if (typeof fileListPath === 'string') {
+                const files = await readFileList(fileListPath, registry._opts);
+                await registry.ingestFileRecords(files);
+            } else {
+                console.error('stream (stdin) input not yet implemented');
+                process.exit(1);
+            }
             console.log('okay gonna try to filter for bad ones now');
             const bad = [];
             for (const file of registry.files) {

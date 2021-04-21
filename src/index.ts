@@ -1,13 +1,13 @@
 import { Readable } from 'node:stream';
 import MapRegistry from './MapRegistry';
 import { readFileList, readMapFile } from './inputProcessor';
-import path from 'node:path';
 import Block, { BlockPrimitive } from './Block';
 
 export interface DDCartographerOptions {
     fileListPath: string | Readable;
     fileFilter?: string;
-    mapFilePath: string | Readable;
+    domainFilePath?: string;
+    mapFilePath?: string | Readable;
     reportPath?: string;
     silent?: boolean;
 }
@@ -34,14 +34,6 @@ export async function ddCartographer(options: DDCartographerOptions): Promise<Ma
             console.error('stream (stdin) input not yet implemented');
             process.exit(1);
         }
-    }
-
-    if (typeof opts.fileListPath === 'string') {
-        const files = await readFileList(opts.fileListPath, opts);
-        await registry.ingestFileRecords(files);
-    } else {
-        console.error('stream (stdin) input not yet implemented');
-        process.exit(1);
     }
 
     return registry;
